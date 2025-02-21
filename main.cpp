@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstring>
 #include <SDL2/SDL_mixer.h>
+#include <time.h>
 using namespace std;
 
 const int WINDOW_WIDTH = 1280;
@@ -358,6 +359,9 @@ int main(int agrc, char *agrv[])
         // Initialize the score
         int point1 = 0;
         int point2 = 0;
+        // Initialize the time after Get Score
+        Uint32 resetTime = 0;
+        bool resetting = false;
 
         bool running = true;
         bool buttons[4] = {};
@@ -444,9 +448,22 @@ int main(int agrc, char *agrv[])
             paddle2.update(dt);
         
         // update ball position
+        srand(time(0));
+        if(resetting)
+        {
+            if(SDL_GetTicks() >= resetTime)
+            {
+                resetting = false;
+                Ball.position = Vec2(WINDOW_WIDTH/2.0f, WINDOW_HEIGHT/2.0f);
+                Ball.velocity = Vec2(rand() % 2 == 0 ? -BALL_SPEED : BALL_SPEED, 0.75f*BALL_SPEED);
+            }
+        }
+        else{
             Ball.Update(dt);
-    
+        }
         // Check the collisions
+        
+
         if(Contact contact = CheckPaddleCollision(Ball, paddle1); contact.type != CollisionType::None)
         {
             Ball.CollidewithPaddle(contact);
@@ -460,22 +477,29 @@ int main(int agrc, char *agrv[])
         else if(contact = CheckWallCollision(Ball); contact.type != CollisionType::None)
         {
             Ball.CollidewithWall(contact);
-
             if(contact.type == CollisionType::Left)
             {
                 ++point2;
                 playerTwoScoreText.setScore(point2);
+                resetting = true;
+                resetTime = SDL_GetTicks() + 1000;
+                
             }
             else if(contact.type == CollisionType::Right)
             {
                 ++point1;
                 playerOneScoreText.setScore(point1);
+                resetting = true;
+                resetTime = SDL_GetTicks() + 1000;
+                
             }   
             else{
                 Mix_PlayChannel(-1, wallHitsound, 0);
             }
             
         }
+
+        
 
     
         // Clear the window to black Purple
